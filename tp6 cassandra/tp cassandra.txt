@@ -1,0 +1,318 @@
+>docker run --name my-cassandra -p 9042:9042 -d cassandra:latest
+65f21575343eb6753bc5b43adbac75ed5289618e7749eadab7d239c27cfb3b05
+
+C:\Users\DELL>docker ps
+CONTAINER ID   IMAGE              COMMAND                  CREATED          STATUS          PORTS                                                       NAMES
+65f21575343e   cassandra:latest   "docker-entrypoint.s…"   5 seconds ago    Up 2 seconds    7000-7001/tcp, 7199/tcp, 9160/tcp, 0.0.0.0:9042->9042/tcp   my-cassandra
+b9a151534c71   569c4128dfa6       "docker-entrypoint.s…"   10 seconds ago   Up 8 seconds                                                                k8s_mysql_mysql-6f4598c87c-pkzq6_default_77a859a1-e9f5-41c7-9853-7a5b97d4e493_3
+e9b4157d96b7   b7915b43e055       "python app.py"          8 months ago     Up 36 seconds   0.0.0.0:5000->5000/tcp                                      flask_app
+e6093e238dd7   146682692a3a       "docker-entrypoint.s…"   8 months ago     Up 40 seconds   0.0.0.0:3306->3306/tcp, 33060/tcp                           mysql_container
+
+C:\Users\DELL>docker exec -it my-cassandra cqlsh
+Connection error: ('Unable to connect to any servers', {'127.0.0.1:9042': ConnectionRefusedError(111, "Tried connecting to [('127.0.0.1', 9042)]. Last error: Connection refused")})
+
+C:\Users\DELL>docker start my-cassandra
+my-cassandra
+
+C:\Users\DELL>docker exec -it my-cassandra cqlsh
+Connected to Test Cluster at 127.0.0.1:9042
+[cqlsh 6.2.0 | Cassandra 5.0.6 | CQL spec 3.4.7 | Native protocol v5]
+Use HELP for help.
+cqlsh> CREATE KEYSPACE IF NOT EXISTS resto_NY
+   ... WITH REPLICATION = {
+   ...   'class' : 'SimpleStrategy',
+   ...   'replication_factor' : 1
+   ... };
+cqlsh> USE resto_NY;
+cqlsh:resto_ny> CREATE TABLE Restaurant (
+            ...   id INT,
+            ...   name TEXT,
+            ...   borough TEXT,
+            ...   buildingnum TEXT,
+            ...   street TEXT,
+            ...   zipcode INT,
+            ...   phone TEXT,
+            ...   cuisinetype TEXT,
+            ...   PRIMARY KEY (id)
+            ... );
+cqlsh:resto_ny> CREATE INDEX IF NOT EXISTS idx_restaurant_cuisine
+            ... ON Restaurant (cuisinetype);
+cqlsh:resto_ny> CREATE TABLE Inspection (
+            ...   idrestaurant INT,
+            ...   inspectiondate DATE,
+            ...   violationcode TEXT,
+            ...   violationdescription TEXT,
+            ...   criticalflag TEXT,
+            ...   score INT,
+            ...   grade TEXT,
+            ...   PRIMARY KEY (idrestaurant, inspectiondate)
+            ... );
+cqlsh:resto_ny> CREATE INDEX IF NOT EXISTS idx_inspection_grade
+            ... ON Inspection (grade);
+cqlsh:resto_ny> DESC Restaurant;
+
+CREATE TABLE resto_ny.restaurant (
+    id int PRIMARY KEY,
+    borough text,
+    buildingnum text,
+    cuisinetype text,
+    name text,
+    phone text,
+    street text,
+    zipcode int
+) WITH additional_write_policy = '99p'
+    AND allow_auto_snapshot = true
+    AND bloom_filter_fp_chance = 0.01
+    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+    AND cdc = false
+    AND comment = ''
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+    AND memtable = 'default'
+    AND crc_check_chance = 1.0
+    AND default_time_to_live = 0
+    AND extensions = {}
+    AND gc_grace_seconds = 864000
+    AND incremental_backups = true
+    AND max_index_interval = 2048
+    AND memtable_flush_period_in_ms = 0
+    AND min_index_interval = 128
+    AND read_repair = 'BLOCKING'
+    AND speculative_retry = '99p';
+
+CREATE INDEX idx_restaurant_cuisine ON resto_ny.restaurant (cuisinetype);
+cqlsh:resto_ny> DESC Inspection;
+
+CREATE TABLE resto_ny.inspection (
+    idrestaurant int,
+    inspectiondate date,
+    criticalflag text,
+    grade text,
+    score int,
+    violationcode text,
+    violationdescription text,
+    PRIMARY KEY (idrestaurant, inspectiondate)
+) WITH CLUSTERING ORDER BY (inspectiondate ASC)
+    AND additional_write_policy = '99p'
+    AND allow_auto_snapshot = true
+    AND bloom_filter_fp_chance = 0.01
+    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+    AND cdc = false
+    AND comment = ''
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+    AND memtable = 'default'
+    AND crc_check_chance = 1.0
+    AND default_time_to_live = 0
+    AND extensions = {}
+    AND gc_grace_seconds = 864000
+    AND incremental_backups = true
+    AND max_index_interval = 2048
+    AND memtable_flush_period_in_ms = 0
+    AND min_index_interval = 128
+    AND read_repair = 'BLOCKING'
+    AND speculative_retry = '99p';
+
+CREATE INDEX idx_inspection_grade ON resto_ny.inspection (grade);
+cqlsh:resto_ny> docker cp restaurants.csv my-cassandra:/restaurants.csv
+            ... docker cp restaurants_inspections.csv my-cassandra:/restaurants_inspections.csv
+            ...
+            ... exit;
+SyntaxException: line 1:0 no viable alternative at input 'docker' ([docker]...)
+cqlsh:resto_ny> docker exec my-cassandra ls /
+            ...
+            ... exite;
+SyntaxException: line 1:0 no viable alternative at input 'docker' ([docker]...)
+cqlsh:resto_ny> exit;
+
+C:\Users\DELL>docker cp "C:\Users\DELL\Downloads\restaurants.csv" my-cassandra:/restaurants.csv
+Successfully copied 2.05kB to my-cassandra:/restaurants.csv
+
+C:\Users\DELL>docker cp "C:\Users\DELL\Downloads\restaurants_inspections.csv" my-cassandra:/restaurants_inspections.csv
+Successfully copied 2.05kB to my-cassandra:/restaurants_inspections.csv
+
+C:\Users\DELL>USE resto_NY;
+'USE' is not recognized as an internal or external command,
+operable program or batch file.
+
+C:\Users\DELL>
+C:\Users\DELL>COPY Restaurant (id, name, borough, buildingnum, street, zipcode, phone, cuisinetype)
+The system cannot find the file specified.
+
+C:\Users\DELL>FROM '/restaurants.csv' WITH DELIMITER=',';
+'FROM' is not recognized as an internal or external command,
+operable program or batch file.
+
+C:\Users\DELL>
+C:\Users\DELL>COPY Inspection (idrestaurant, inspectiondate, violationcode, violationdescription, critical, score, grade)
+The system cannot find the file specified.
+
+C:\Users\DELL>FROM '/restaurants_inspections.csv' WITH DELIMITER=',';
+'FROM' is not recognized as an internal or external command,
+operable program or batch file.
+
+C:\Users\DELL>docker exec -it my-cassandra cqlsh
+Connected to Test Cluster at 127.0.0.1:9042
+[cqlsh 6.2.0 | Cassandra 5.0.6 | CQL spec 3.4.7 | Native protocol v5]
+Use HELP for help.
+cqlsh> USE resto_NY;
+cqlsh:resto_ny> COPY Restaurant (id, name, borough, buildingnum, street, zipcode, phone, cuisinetype)
+            ... FROM '/restaurants.csv' WITH DELIMITER=',';
+Using 7 child processes
+
+Starting copy of resto_ny.restaurant with columns [id, name, borough, buildingnum, street, zipcode, phone, cuisinetype].
+Failed to import 4 rows: ParseError - Invalid row length 1 should be 8,  given up without retries
+Failed to process 4 rows; failed rows written to import_resto_ny_restaurant.err
+Processed: 4 rows; Rate:       7 rows/s; Avg. rate:      11 rows/s
+0 rows imported from 1 files in 0.372 seconds (0 skipped).
+cqlsh:resto_ny>
+cqlsh:resto_ny> COPY Restaurant (id, name, borough, buildingnum, street, zipcode, phone, cuisinetype)
+            ... FROM '/restaurants.csv' WITH DELIMITER=';' AND HEADER=TRUE;
+Using 7 child processes
+
+Starting copy of resto_ny.restaurant with columns [id, name, borough, buildingnum, street, zipcode, phone, cuisinetype].
+Processed: 3 rows; Rate:       6 rows/s; Avg. rate:       9 rows/s
+3 rows imported from 1 files in 0.353 seconds (0 skipped).
+cqlsh:resto_ny> COPY Inspection (idrestaurant, inspectiondate, violationcode, violationdescription, critical, score, grade)
+            ... FROM '/restaurants_inspections.csv' WITH DELIMITER=';' AND HEADER=TRUE;
+Using 7 child processes
+Invalid column name critical
+cqlsh:resto_ny> DESCRIBE TABLE Inspection;
+
+CREATE TABLE resto_ny.inspection (
+    idrestaurant int,
+    inspectiondate date,
+    criticalflag text,
+    grade text,
+    score int,
+    violationcode text,
+    violationdescription text,
+    PRIMARY KEY (idrestaurant, inspectiondate)
+) WITH CLUSTERING ORDER BY (inspectiondate ASC)
+    AND additional_write_policy = '99p'
+    AND allow_auto_snapshot = true
+    AND bloom_filter_fp_chance = 0.01
+    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+    AND cdc = false
+    AND comment = ''
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+    AND memtable = 'default'
+    AND crc_check_chance = 1.0
+    AND default_time_to_live = 0
+    AND extensions = {}
+    AND gc_grace_seconds = 864000
+    AND incremental_backups = true
+    AND max_index_interval = 2048
+    AND memtable_flush_period_in_ms = 0
+    AND min_index_interval = 128
+    AND read_repair = 'BLOCKING'
+    AND speculative_retry = '99p';
+
+CREATE INDEX idx_inspection_grade ON resto_ny.inspection (grade);
+cqlsh:resto_ny> COPY Inspection (idrestaurant, inspectiondate, violationcode, violationdescription, criticalflag, score, grade)
+            ... FROM '/restaurants_inspections.csv'
+            ... WITH DELIMITER=';' AND HEADER=TRUE;
+Using 7 child processes
+
+Starting copy of resto_ny.inspection with columns [idrestaurant, inspectiondate, violationcode, violationdescription, criticalflag, score, grade].
+Processed: 4 rows; Rate:       6 rows/s; Avg. rate:      10 rows/s
+4 rows imported from 1 files in 0.414 seconds (0 skipped).
+cqlsh:resto_ny> SELECT count(*) FROM Restaurant;
+
+ count
+-------
+     3
+
+(1 rows)
+
+Warnings :
+Aggregation query used without partition key
+
+cqlsh:resto_ny> SELECT count(*) FROM Inspection;
+
+ count
+-------
+     4
+
+(1 rows)
+
+Warnings :
+Aggregation query used without partition key
+
+cqlsh:resto_ny> SELECT * FROM Restaurant;
+
+ id       | borough   | buildingnum | cuisinetype  | name               | phone        | street        | zipcode
+----------+-----------+-------------+--------------+--------------------+--------------+---------------+---------
+ 40356018 |  Brooklyn |        2780 |     American |    Riviera Caterer | 718-372-3031 | Stillwell Ave |   11224
+ 50012345 | Manhattan |           7 |      Italian |        Joe's Pizza | 212-366-1182 |    Carmine St |   10014
+ 40361618 |  Brooklyn |        7114 | Delicatessen | Wilken's Fine Food | 718-444-3838 |      Avenue U |   11234
+
+(3 rows)
+cqlsh:resto_ny> SELECT name FROM Restaurant;
+
+ name
+--------------------
+    Riviera Caterer
+        Joe's Pizza
+ Wilken's Fine Food
+
+(3 rows)
+cqlsh:resto_ny> SELECT name, borough FROM Restaurant
+            ... WHERE id = 41569764;
+
+ name | borough
+------+---------
+
+(0 rows)
+cqlsh:resto_ny> SELECT inspectiondate, grade FROM Inspection
+            ... WHERE idrestaurant = 41569764;
+
+ inspectiondate | grade
+----------------+-------
+     2023-11-20 |     B
+
+(1 rows)
+cqlsh:resto_ny> SELECT name FROM Restaurant
+            ... WHERE cuisinetype = 'French';
+
+ name
+------
+
+(0 rows)
+cqlsh:resto_ny> CREATE INDEX IF NOT EXISTS idx_restaurant_borough
+            ... ON Restaurant (borough);
+cqlsh:resto_ny>
+cqlsh:resto_ny> SELECT name FROM Restaurant WHERE borough = 'BROOKLYN';
+ReadFailure: Error from server: code=1300 [Replica(s) failed to execute read] message="Operation failed - received 0 responses and 1 failures: UNKNOWN from /172.17.0.2:7000" info={'consistency': 'ONE', 'required_responses': 1, 'received_responses': 0, 'failures': 1, 'error_code_map': {'172.17.0.2': '0x0000'}}
+cqlsh:resto_ny> SELECT name FROM Restaurant
+            ... WHERE borough = 'BROOKLYN' ALLOW FILTERING;
+
+ name
+------
+
+(0 rows)
+cqlsh:resto_ny> SELECT grade, score FROM Inspection
+            ... WHERE idrestaurant = 41569764 AND score >= 10 ALLOW FILTERING;
+
+ grade | score
+-------+-------
+     B |    12
+
+(1 rows)
+cqlsh:resto_ny> SELECT grade FROM Inspection
+            ... WHERE score > 30 ALLOW FILTERING;
+
+ grade
+-------
+     C
+
+(1 rows)
+cqlsh:resto_ny> SELECT count(*) FROM Inspection
+            ... WHERE score > 30 ALLOW FILTERING;
+
+ count
+-------
+     1
+
+(1 rows)
