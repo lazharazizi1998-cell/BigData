@@ -1,0 +1,102 @@
+mongosh.exe
+Current Mongosh Log ID: 691cb14cf51b56784e63b111
+Connecting to:          mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.5.9
+Using MongoDB:          8.0.15
+Using Mongosh:          2.5.9
+
+For mongosh info see: https://www.mongodb.com/docs/mongodb-shell/
+
+------
+   The server generated these startup warnings when booting
+   2025-11-17T21:07:47.217+01:00: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted
+------
+
+Warning: Found ~/.mongorc.js, but not ~/.mongoshrc.js. ~/.mongorc.js will not be loaded.
+  You may want to copy or rename ~/.mongorc.js to ~/.mongoshrc.js.
+test>
+
+test> // 1️⃣ اختيار أو إنشاء قاعدة البيانات باسم info
+
+test> use info
+switched to db info
+info> db.produits.insertOne({
+...     nom: "Macbook Pro",
+...     fabriquant: "Apple",
+...     prix: 11435.99,
+...     options: "Intel Core i5 Retina Display Long life battery"
+... })
+{
+  acknowledged: true,
+  insertedId: ObjectId('691cb15ff51b56784e63b112')
+}
+info> // 3️⃣ إضافة مستند آخر
+
+info> db.produits.insertOne({
+...     nom: "Macbook Air",
+...     fabriquant: "Apple",
+...     prix: 125794.73,
+...     ultrabook: true,
+...     options: "Intel Core i7 SSD Long life battery"
+... })
+{
+  acknowledged: true,
+  insertedId: ObjectId('691cb167f51b56784e63b113')
+}
+info> // 4️⃣ عرض كل المستندات بشكل مرتب
+
+info> db.produits.find().pretty()
+[
+  {
+    _id: ObjectId('691cb15ff51b56784e63b112'),
+    nom: 'Macbook Pro',
+    fabriquant: 'Apple',
+    prix: 11435.99,
+    options: 'Intel Core i5 Retina Display Long life battery'
+  },
+  {
+    _id: ObjectId('691cb167f51b56784e63b113'),
+    nom: 'Macbook Air',
+    fabriquant: 'Apple',
+    prix: 125794.73,
+    ultrabook: true,
+    options: 'Intel Core i7 SSD Long life battery'
+  }
+]
+info> // البحث عن المنتجات التي سعرها أكبر من 10000
+
+info> db.produits.find({ prix: { $gt: 10000 } }).pretty()
+[
+  {
+    _id: ObjectId('691cb15ff51b56784e63b112'),
+    nom: 'Macbook Pro',
+    fabriquant: 'Apple',
+    prix: 11435.99,
+    options: 'Intel Core i5 Retina Display Long life battery'
+  },
+  {
+    _id: ObjectId('691cb167f51b56784e63b113'),
+    nom: 'Macbook Air',
+    fabriquant: 'Apple',
+    prix: 125794.73,
+    ultrabook: true,
+    options: 'Intel Core i7 SSD Long life battery'
+  }
+]
+info>
+
+info> // إضافة حقل جديد لجميع المستندات
+
+info> db.produits.updateMany({}, { $set: { stock: 50 } })
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 2,
+  modifiedCount: 2,
+  upsertedCount: 0
+}
+info>
+
+info> // حذف جميع المنتجات
+
+info> db.produits.deleteMany({})
+{ acknowledged: true, deletedCount: 2 }
